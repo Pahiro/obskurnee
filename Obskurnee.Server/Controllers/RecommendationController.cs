@@ -41,4 +41,17 @@ public class RecommendationController(
             return Json(await _recommendations.UpdateRec(rec));
         return new ForbidResult();
     }
+
+    [HttpDelete("{id}")]
+    [Authorize(Policy = "CanUpdate")]
+    public async Task<IActionResult> DeleteRec(int id)
+    {
+        var success = await _recommendations.DeleteRec(id);
+        if (!success)
+        {
+            return NotFound();
+        }
+
+        return NoContent(); // 204 No Content for a successful delete
+    }
 }

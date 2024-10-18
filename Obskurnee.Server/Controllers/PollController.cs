@@ -52,4 +52,19 @@ public class PollController(
     {
         public int[] PostIds { get; set; }
     }
+
+    [HttpDelete("{pollId:int}")]
+    [Authorize(Policy = "CanUpdate")]
+    public async Task<IActionResult> DeletePoll(int pollId)
+    {
+        var success = await _polls.DeletePoll(pollId);
+        if (!success)
+        {
+            return NotFound();
+        }
+
+        _logger.LogInformation("Poll {pollId} deleted by user {userId}", pollId, User.GetUserId());
+        return NoContent(); // 204 No Content for a successful delete
+    }
+
 }

@@ -283,4 +283,65 @@ public class RoundManagerService(
                 post.OwnerName,
                 post.Url));
     }
+
+
+    public async Task<bool> DeleteRound(int roundId)
+    {
+        // Find the round with the specified ID, including related discussions and polls.
+        var round = await _db.Rounds
+            .Include(r => r.BookDiscussion)
+            .Include(r => r.ThemeDiscussion)
+            .Include(r => r.BookPoll)
+            .Include(r => r.ThemePoll)
+            .FirstOrDefaultAsync(r => r.RoundId == roundId);
+
+        if (round == null)
+        {
+            _logger.LogWarning("Attempted to delete a non-existent round with ID {RoundId}.", roundId);
+            return false; // Round not found.
+        }
+
+        // Start transaction for deleting related entities.
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            // Delete discussions if they exist.
+            if (round.BookDiscussion != null)
+            {
+                _db.Discussions.Remove(round.BookDiscussion);
+            }
+            if (round.ThemeDiscussion != null)
+            {
+                _db.Discussions.Remove(round.ThemeDiscussion);
+            }
+
+            // Delete polls if they exist.
+            if (round.BookPoll != null)
+            {
+                _db.Polls.Remove(round.BookPoll);
+            }
+            if (round.ThemePoll != null)
+            {
+                _db.Polls.Remove(round.ThemePoll);
+            }
+
+            // Finally, delete the round itself.
+            _db.Rounds.Remove(round);
+
+            // Save all changes to the database.
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Round with ID {RoundId} has been deleted.", roundId);
+            return true; // Deletion successful.
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while deleting round with ID {RoundId}.", roundId);
+            await transaction.RollbackAsync();
+            throw; // Rethrow the exception for further handling.
+        }
+    }
+
+
 }

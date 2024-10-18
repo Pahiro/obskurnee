@@ -101,4 +101,38 @@ public class DiscussionService(
     public async Task<Discussion?> GetLatestOpen()
         => await _db.Discussions.AsNoTracking()
         .Where(d => !d.IsClosed).OrderByDescending(d => d.DiscussionId).FirstOrDefaultAsync();
+
+    public async Task DeleteDiscussion(int discussionId)
+    {
+        var discussion = await _db.Discussions.Include(d => d.Posts)
+                                                .FirstOrDefaultAsync(d => d.DiscussionId == discussionId);
+        if (discussion == null)
+        {
+            throw new Exception(_localizer["discussionNotFound"]);
+        }
+
+        if (discussion.IsClosed)
+        {
+            throw new Exception(_localizer["discussionClosed"]);
+        }
+
+        // Remove all posts associated with the discussion
+        _db.Posts.RemoveRange(discussion.Posts);
+
+        _db.Discussions.Remove(discussion);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeletePost(int discussionId, int postId)
+    {
+        var post = await _db.Posts.SingleOrDefaultAsync(p => p.PostId == postId && p.DiscussionId == discussionId);
+        if (post == null)
+        {
+            throw new Exception(_localizer["postNotFound"]);
+        }
+
+        _db.Posts.Remove(post);
+        await _db.SaveChangesAsync();
+    }
+
 }

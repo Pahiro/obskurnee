@@ -68,4 +68,16 @@ public class RecommendationService(
                 rec.Url,
                 link));
     }
+    public async Task<bool> DeleteRec(int recId)
+    {
+        var rec = await _db.Recommendations.FindAsync(recId);
+        if (rec == null)
+        {
+            return false;
+        }
+
+        _db.Recommendations.Remove(rec);
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }

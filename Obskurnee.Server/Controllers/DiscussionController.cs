@@ -45,6 +45,36 @@ public partial class DiscussionController(
         return new ForbidResult();
     }
 
+    [HttpDelete("{discussionId:int}/posts/{postId:int}")]
+    [Authorize(Policy = "CanUpdate")]
+    public async Task<IActionResult> DeletePost(int discussionId, int postId)
+    {
+        try
+        {
+            await _discussions.DeletePost(discussionId, postId);
+            return NoContent(); // Success response
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpDelete("{discussionId:int}")]
+    [Authorize(Policy = "CanUpdate")]
+    public async Task<IActionResult> DeleteDiscussion(int discussionId)
+    {
+        try
+        {
+            await _discussions.DeleteDiscussion(discussionId);
+            return NoContent(); // Success response
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     /// <summary>
     /// Renders input Text as Markdown and returns HTML.
     /// </summary>

@@ -47,4 +47,20 @@ public class RoundController(
             roundData["title"].ToString(),
             roundData.ContainsKey("description") ? roundData["description"].ToString() : "",
             User.GetUserId());
+
+
+    [HttpDelete("{roundId:int}")]
+    [Authorize(Policy = "CanUpdate")]
+    public async Task<IActionResult> DeleteRound(int roundId)
+    {
+        try
+        {
+            await _roundManager.DeleteRound(roundId);
+            return NoContent(); // Success response
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

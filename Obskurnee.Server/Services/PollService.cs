@@ -103,4 +103,27 @@ public class PollService(
 
     public Task<Poll> GetLatestOpen()
         => _db.Polls.OrderByDescending(d => d.PollId).FirstOrDefaultAsync(d => !d.IsClosed);
+
+    public async Task<bool> DeletePoll(int pollId)
+    {
+        // Find the poll by its ID
+        var poll = await _db.Polls.FindAsync(pollId);
+        if (poll == null)
+        {
+            return false; // Poll not found
+        }
+
+        // Remove any associated votes if necessary
+        var votes = await _db.Votes.Where(v => v.PollId == pollId).ToListAsync();
+        _db.Votes.RemoveRange(votes); // Remove all associated votes
+
+        // Remove the poll itself
+        _db.Polls.Remove(poll);
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Poll with ID {PollId} has been deleted.", pollId);
+        return true; // Deletion successful
+    }
+
+
 }
