@@ -71,9 +71,12 @@ public partial class DiscussionController(
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            // Check if there is an InnerException and return its message, otherwise return the main exception message
+            var errorMessage = ex.InnerException?.Message ?? ex.Message;
+            return BadRequest(errorMessage);
         }
     }
+
 
     /// <summary>
     /// Renders input Text as Markdown and returns HTML.

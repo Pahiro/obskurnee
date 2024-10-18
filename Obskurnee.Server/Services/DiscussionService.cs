@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Obskurnee.Controllers;
 using Obskurnee.Models;
 using Obskurnee.Server;
 
@@ -104,12 +106,15 @@ public class DiscussionService(
 
     public async Task DeleteDiscussion(int discussionId)
     {
-        var discussion = await _db.Discussions.Include(d => d.Posts)
-                                                .FirstOrDefaultAsync(d => d.DiscussionId == discussionId);
+        var discussion = await _db.Discussions
+                                    .Include(d => d.Posts)
+                                    .Include(d => d.Round)
+                                    .FirstOrDefaultAsync(d => d.DiscussionId == discussionId);
         if (discussion == null)
         {
             throw new Exception(_localizer["discussionNotFound"]);
         }
+
 
         if (discussion.IsClosed)
         {
@@ -118,6 +123,20 @@ public class DiscussionService(
 
         // Remove all posts associated with the discussion
         _db.Posts.RemoveRange(discussion.Posts);
+
+        // Remove the poll associated with the discussion
+        if (discussion.PollId > 0){
+            var poll = await _db.Polls.FindAsync(discussion.PollId);
+            if (poll != null)
+            {
+                _db.Polls.Remove(poll); // Directly remove the associated Poll
+            }
+        }
+
+        if (discussion.Round != null)
+        {
+            _db.Rounds.Remove(discussion.Round); // Directly remove the associated Poll
+        }
 
         _db.Discussions.Remove(discussion);
         await _db.SaveChangesAsync();
